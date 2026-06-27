@@ -1,6 +1,7 @@
 import { CalendarDays, Gauge, PiggyBank, ShieldAlert, WalletCards } from "lucide-react";
 import { cookies } from "next/headers";
 
+import { ClientGreeting } from "@/components/dashboard/client-greeting";
 import { DashboardAnalytics } from "@/components/dashboard/dashboard-analytics";
 import { SummaryCard } from "@/components/dashboard/summary-card";
 import { Badge } from "@/components/ui/badge";
@@ -35,24 +36,6 @@ type PlainQuickAction = {
   icon: QuickActionIconKey;
   title: string;
 };
-
-function getGreeting(now = new Date()) {
-  const hour = now.getHours();
-
-  if (hour >= 5 && hour < 12) {
-    return "Good morning";
-  }
-
-  if (hour >= 12 && hour < 17) {
-    return "Good afternoon";
-  }
-
-  if (hour >= 17 && hour < 21) {
-    return "Good evening";
-  }
-
-  return "Good night";
-}
 
 function getFirstName(value?: string | null) {
   const firstName = value?.trim().split(/\s+/)[0];
@@ -151,7 +134,6 @@ export default async function DashboardPage() {
   const { activeWorkspace, dashboard, userName } = await getDashboardData();
   const dashboardSummary = dashboard.summary;
   const isBusinessWorkspace = activeWorkspace?.type === "business";
-  const greeting = getGreeting();
   const currentDate = new Intl.DateTimeFormat("en-US", {
     day: "numeric",
     month: "short",
@@ -251,7 +233,7 @@ export default async function DashboardPage() {
             </div>
 
             <h1 className="max-w-4xl text-balance text-3xl font-black tracking-tight text-white sm:text-4xl xl:text-[2.65rem]">
-              {greeting}, {userName}
+              <ClientGreeting userName={userName} />
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
               {isBusinessWorkspace

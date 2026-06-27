@@ -35,15 +35,6 @@ type AccountTypeMeta = {
   label: string;
 };
 
-type BusinessDefaultsResponse = {
-  accounts: Account[];
-  summary: {
-    created: string[];
-    renamed: string[];
-    skipped: string[];
-  };
-};
-
 const accountTypeMeta: Record<AccountType, AccountTypeMeta> = {
   cash: {
     color: "#38BDF8",
@@ -109,28 +100,6 @@ const iconOptions = [
   "WalletCards"
 ];
 const colorOptions = ["#38BDF8", "#22D3EE", "#6366F1", "#8B5CF6", "#22C55E", "#64748B"];
-const davenueRecommendedAccounts = [
-  {
-    name: "Business Cash",
-    purpose: "Cash modal, direct cash payments, and offline petty cash."
-  },
-  {
-    name: "Shopee Seller Balance",
-    purpose: "Sales revenue held inside Shopee Seller Center before withdrawal."
-  },
-  {
-    name: "SeaBank Davenue",
-    purpose: "Main business bank for withdrawals, supplier payments, and operations."
-  },
-  {
-    name: "Davenue ShopeePay",
-    purpose: "Business wallet for ShopeePay expenses and payment flows."
-  },
-  {
-    name: "Davenue GoPay",
-    purpose: "Optional business e-wallet when GoPay is used."
-  }
-];
 const fieldLabelClass =
   "mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400/95";
 const controlClass =
@@ -208,8 +177,6 @@ export function AccountsManager() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [reconciling, setReconciling] = useState(false);
-  const [applyingBusinessDefaults, setApplyingBusinessDefaults] = useState(false);
-  const [includeDavenueGopay, setIncludeDavenueGopay] = useState(false);
 
   const totalBalance = useMemo(
     () => accounts.reduce((total, account) => total + Number(account.current_balance ?? 0), 0),
@@ -241,50 +208,6 @@ export function AccountsManager() {
   }, [accounts]);
   const hasBalanceMovement = accounts.some((account) => Number(account.current_balance ?? 0) > 0);
   const typeCount = new Set(accounts.map((account) => account.type)).size;
-  const davenueAccountNames = useMemo(
-    () => new Set(accounts.map((account) => account.name.toLowerCase())),
-    [accounts]
-  );
-  const missingDavenueAccounts = useMemo(
-    () =>
-      davenueRecommendedAccounts.filter(
-        (recommended) =>
-          recommended.name !== "Davenue GoPay" &&
-          !davenueAccountNames.has(recommended.name.toLowerCase())
-      ),
-    [davenueAccountNames]
-  );
-  const activeDavenueAccounts = useMemo(
-    () =>
-      davenueRecommendedAccounts.filter((recommended) =>
-        davenueAccountNames.has(recommended.name.toLowerCase())
-      ),
-    [davenueAccountNames]
-  );
-  const genericBusinessAccounts = useMemo(
-    () =>
-      accounts.filter((account) =>
-        ["business bank", "business e-wallet"].includes(account.name.toLowerCase())
-      ),
-    [accounts]
-  );
-  const needsDavenueSetup =
-    missingDavenueAccounts.length > 0 ||
-    genericBusinessAccounts.length > 0 ||
-    (includeDavenueGopay && !davenueAccountNames.has("davenue gopay"));
-  const showDavenueGuide =
-    accounts.some((account) =>
-      [
-        "business cash",
-        "business bank",
-        "business e-wallet",
-        "shopee seller balance",
-        "seabank davenue",
-        "davenue shopeepay"
-      ].includes(
-        account.name.toLowerCase()
-      )
-    ) || accounts.some((account) => account.type === "business");
 
   async function loadAccounts() {
     setLoading(true);
@@ -426,30 +349,6 @@ export function AccountsManager() {
     }
   }
 
-  async function applyRecommendedBusinessAccounts() {
-    setApplyingBusinessDefaults(true);
-    try {
-      const result = await requestJson<BusinessDefaultsResponse>("/api/accounts/business-defaults", {
-        method: "POST",
-        body: JSON.stringify({ include_gopay: includeDavenueGopay })
-      });
-      setAccounts(result.accounts);
-
-      const changedCount = result.summary.created.length + result.summary.renamed.length;
-      toast.success(
-        changedCount > 0
-          ? `Applied ${changedCount} recommended business account update(s).`
-          : "Business account setup is already complete."
-      );
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Could not apply recommended business accounts."
-      );
-    } finally {
-      setApplyingBusinessDefaults(false);
-    }
-  }
-
   return (
     <>
     <div className="space-y-5">
@@ -525,7 +424,7 @@ export function AccountsManager() {
                 onChange={(event) =>
                   setForm((current) => ({ ...current, name: event.target.value }))
                 }
-                placeholder="BCA, Cash, GoPay, Savings..."
+                placeholder="Shopee Seller Balance, SeaBank Davenue, Davenue ShopeePay..."
                 required
               />
             </label>
@@ -696,99 +595,6 @@ export function AccountsManager() {
               </p>
             </div>
           </div>
-
-          {showDavenueGuide ? (
-            <div className="mb-5 rounded-[1.35rem] border border-cyan-400/16 bg-cyan-400/[0.06] p-3.5">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-200/80">
-                    Davenue business account map
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-slate-300">
-                    Sales flow: Shopee Seller Balance to SeaBank Davenue. Expenses can use
-                    Davenue ShopeePay, SeaBank, GoPay, or Business Cash based on payment method.
-                  </p>
-                </div>
-                <Badge tone={needsDavenueSetup ? "blue" : "green"}>
-                  {needsDavenueSetup
-                    ? `${missingDavenueAccounts.length + genericBusinessAccounts.length} update needed`
-                    : "Ready"}
-                </Badge>
-              </div>
-              <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                <div className="rounded-2xl border border-slate-800/70 bg-slate-950/36 p-3">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
-                    Active
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {activeDavenueAccounts.length ? (
-                      activeDavenueAccounts.map((account) => (
-                        <span
-                          key={account.name}
-                          className="rounded-full border border-green-400/20 bg-green-400/10 px-2.5 py-1 text-xs text-green-200"
-                          title={account.purpose}
-                        >
-                          {account.name}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-xs text-slate-500">No recommended accounts active yet.</span>
-                    )}
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-slate-800/70 bg-slate-950/36 p-3">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
-                    Missing / Rename needed
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {genericBusinessAccounts.map((account) => (
-                      <span
-                        key={account.id}
-                        className="rounded-full border border-indigo-400/20 bg-indigo-400/10 px-2.5 py-1 text-xs text-indigo-100"
-                      >
-                        Rename {account.name}
-                      </span>
-                    ))}
-                    {missingDavenueAccounts.map((account) => (
-                      <span
-                        key={account.name}
-                        className="rounded-full border border-cyan-400/18 bg-cyan-400/10 px-2.5 py-1 text-xs text-cyan-100"
-                        title={account.purpose}
-                      >
-                        Add {account.name}
-                      </span>
-                    ))}
-                    {!needsDavenueSetup ? (
-                      <span className="text-xs font-semibold text-green-200">
-                        Business account setup complete
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-              <div className="mt-3 flex flex-col gap-3 border-t border-slate-800/55 pt-3 sm:flex-row sm:items-center sm:justify-between">
-                <label className="flex items-start gap-2 rounded-2xl border border-slate-800/70 bg-slate-950/36 px-3 py-2 text-xs leading-5 text-slate-300">
-                  <input
-                    type="checkbox"
-                    className="mt-1 h-4 w-4 accent-cyan-300"
-                    checked={includeDavenueGopay}
-                    disabled={davenueAccountNames.has("davenue gopay") || applyingBusinessDefaults}
-                    onChange={(event) => setIncludeDavenueGopay(event.target.checked)}
-                  />
-                  Include optional Davenue GoPay account
-                </label>
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={applyRecommendedBusinessAccounts}
-                  disabled={applyingBusinessDefaults || !needsDavenueSetup}
-                >
-                  <Plus className="h-4 w-4" aria-hidden="true" />
-                  {applyingBusinessDefaults ? "Applying..." : "Apply Recommended Accounts"}
-                </Button>
-              </div>
-            </div>
-          ) : null}
 
           {loading ? (
             <div className="grid gap-3 md:grid-cols-2">

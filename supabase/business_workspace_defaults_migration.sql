@@ -1,24 +1,6 @@
 -- DFT Davenue business workspace defaults.
--- Safe to run multiple times. Adds missing business accounts/categories only to business workspaces.
-
-insert into public.accounts (user_id, workspace_id, name, type, initial_balance, current_balance, color, icon)
-select workspace.user_id, workspace.id, account.name, account.type, 0, 0, account.color, account.icon
-from public.workspaces workspace
-cross join (
-  values
-    ('Business Cash', 'business', '#38BDF8', 'Briefcase'),
-    ('Shopee Seller Balance', 'business', '#F472B6', 'Store'),
-    ('SeaBank Davenue', 'bank', '#6366F1', 'Landmark'),
-    ('Davenue ShopeePay', 'e-wallet', '#22D3EE', 'Smartphone'),
-    ('Davenue GoPay', 'e-wallet', '#22C55E', 'Smartphone')
-) as account(name, type, color, icon)
-where workspace.type = 'business'
-  and not exists (
-    select 1 from public.accounts existing
-    where existing.user_id = workspace.user_id
-      and existing.workspace_id = workspace.id
-      and existing.name = account.name
-  );
+-- Safe to run multiple times. Adds missing business categories only.
+-- Business accounts are intentionally managed manually from the Accounts page.
 
 insert into public.categories (user_id, workspace_id, name, type, color, icon)
 select workspace.user_id, workspace.id, category.name, category.type, category.color, category.icon

@@ -32,14 +32,6 @@ const businessCategories = [
   { name: "Other Business Expense", type: "expense", color: "#94A3B8", icon: "ReceiptText" }
 ];
 
-const businessAccounts = [
-  { name: "Business Cash", type: "business", color: "#38BDF8", icon: "Briefcase" },
-  { name: "Shopee Seller Balance", type: "business", color: "#F472B6", icon: "Store" },
-  { name: "SeaBank Davenue", type: "bank", color: "#6366F1", icon: "Landmark" },
-  { name: "Davenue ShopeePay", type: "e-wallet", color: "#22D3EE", icon: "Smartphone" },
-  { name: "Davenue GoPay", type: "e-wallet", color: "#22C55E", icon: "Smartphone" }
-];
-
 export async function GET(request: NextRequest) {
   const auth = await requireFinanceUser();
 
@@ -90,24 +82,13 @@ export async function POST(request: NextRequest) {
   }
 
   if (data.type === "business") {
-    await Promise.all([
-      auth.supabase.from("categories").insert(
-        businessCategories.map((category) => ({
-          ...category,
-          user_id: auth.user.id,
-          workspace_id: data.id
-        }))
-      ),
-      auth.supabase.from("accounts").insert(
-        businessAccounts.map((account) => ({
-          ...account,
-          current_balance: 0,
-          initial_balance: 0,
-          user_id: auth.user.id,
-          workspace_id: data.id
-        }))
-      )
-    ]);
+    await auth.supabase.from("categories").insert(
+      businessCategories.map((category) => ({
+        ...category,
+        user_id: auth.user.id,
+        workspace_id: data.id
+      }))
+    );
   }
 
   const response = NextResponse.json({ workspace: data }, { status: 201 });
