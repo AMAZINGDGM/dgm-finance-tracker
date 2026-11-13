@@ -9,7 +9,7 @@ import { DftLogo } from "@/components/brand/dft-logo";
 
 type AuthShellProps = {
   children: React.ReactNode;
-  mode: "login" | "register";
+  mode: "login" | "register" | "forgot-password" | "reset-password";
 };
 
 const topStream = [
@@ -31,11 +31,24 @@ const bottomStream = [
 ];
 
 export function AuthShell({ children, mode }: AuthShellProps) {
-  const isLogin = mode === "login";
-  const cardTitle = isLogin ? "Access DFT" : "Create Your DFT Account";
-  const cardSubtitle = isLogin
-    ? "Sign in to continue your finance command session."
-    : "Create your secure Dgm Finance Tracker workspace.";
+  const cardContent = {
+    login: {
+      title: "Access DFT",
+      subtitle: "Sign in to continue your finance command session."
+    },
+    register: {
+      title: "Create Your DFT Account",
+      subtitle: "Create your secure Dgm Finance Tracker workspace."
+    },
+    "forgot-password": {
+      title: "Reset Your Password",
+      subtitle: "We will send a secure password reset link to your email."
+    },
+    "reset-password": {
+      title: "Choose a New Password",
+      subtitle: "Create a new password to secure your DFT account."
+    }
+  }[mode];
   const features = [
     { icon: BrainCircuit, label: "AI Finance Assistant" },
     { icon: ChartNoAxesCombined, label: "Smart Monthly Reports" },
@@ -96,9 +109,9 @@ export function AuthShell({ children, mode }: AuthShellProps) {
           <div className="mb-6 text-center">
             <DftLogo className="mb-4 justify-center" size="xs" />
             <h2 className="auth-card-title text-2xl font-bold text-white sm:text-3xl">
-              {cardTitle}
+              {cardContent.title}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-400">{cardSubtitle}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">{cardContent.subtitle}</p>
           </div>
           {children}
           <div className="mt-6 flex items-start gap-3 rounded-2xl border border-cyan-300/15 bg-cyan-300/5 p-4 text-xs leading-5 text-slate-300">
