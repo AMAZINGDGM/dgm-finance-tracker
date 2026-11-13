@@ -181,6 +181,17 @@ export function AuthForm({ mode }: AuthFormProps) {
         </span>
       </label>
 
+      {mode === "login" ? (
+        <div className="-mt-2 flex justify-end">
+          <Link
+            className="text-sm font-semibold text-cyan-200 transition hover:text-white hover:underline"
+            href="/forgot-password"
+          >
+            Forgot password?
+          </Link>
+        </div>
+      ) : null}
+
       <Button
         className="auth-submit-button mt-2 w-full shadow-[0_18px_50px_rgba(34,211,238,0.22)]"
         type="submit"
