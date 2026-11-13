@@ -6,8 +6,10 @@ import {
   ArrowLeftRight,
   ArrowUpRight,
   CalendarDays,
+  Download,
   Edit3,
   Filter,
+  FileSpreadsheet,
   MoveRight,
   Plus,
   SearchX,
@@ -26,6 +28,7 @@ import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { Modal } from "@/components/ui/modal";
 import { Select } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/finance/format";
+import { downloadExcelWorkbook } from "@/lib/finance/export-xlsx";
 import { requestJson, todayInputValue } from "@/lib/finance/client-api";
 import { cn } from "@/lib/utils";
 import type { Account, Category, Transaction } from "@/types/entities";
@@ -587,6 +590,49 @@ export function TransactionsManager() {
     return categoryMap.get(transaction.category_id ?? "")?.name ?? "Uncategorized";
   }
 
+  function handleExportExcel() {
+    if (filteredTransactions.length === 0) {
+      toast.error("There are no transactions to export. Add a transaction or adjust your filters.");
+      return;
+    }
+
+    try {
+      const rows = filteredTransactions.map((transaction) => [
+        transaction.id,
+        transaction.date,
+        transaction.type,
+        categoryLabel(transaction),
+        accountLabel(transaction),
+        transaction.note ?? "",
+        Number(transaction.amount ?? 0),
+        transaction.source,
+        transaction.created_at
+      ]);
+      const today = new Date().toISOString().slice(0, 10);
+
+      downloadExcelWorkbook({
+        filename: `dgm-finance-transactions-${today}.xlsx`,
+        sheetName: "Transactions",
+        columns: [
+          { header: "Transaction ID", width: 38 },
+          { header: "Date", width: 14 },
+          { header: "Type", width: 14 },
+          { header: "Category", width: 20 },
+          { header: "Account", width: 24 },
+          { header: "Description", width: 34 },
+          { header: "Amount (IDR)", width: 18 },
+          { header: "Source", width: 16 },
+          { header: "Created At", width: 24 }
+        ],
+        rows
+      });
+
+      toast.success(`${filteredTransactions.length} transaction(s) exported to Excel.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not export transactions to Excel.");
+    }
+  }
+
   function moveToTransactionForm() {
     resetForm();
     document.getElementById("transaction-form")?.scrollIntoView({
@@ -814,7 +860,21 @@ export function TransactionsManager() {
                 {filteredTransactions.length} shown from {transactions.length} total
               </CardDescription>
             </div>
-            <Badge tone="accent">IDR</Badge>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Badge tone="accent">IDR</Badge>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={handleExportExcel}
+                disabled={loading}
+                title="Export the transactions currently shown by your filters to an Excel workbook"
+              >
+                <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
+                Export to Excel
+                <Download className="h-3.5 w-3.5" aria-hidden="true" />
+              </Button>
+            </div>
           </CardHeader>
 
           <div className="mb-5 rounded-[1.35rem] border border-slate-800/75 bg-slate-950/28 p-3.5">
